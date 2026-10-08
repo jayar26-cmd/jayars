@@ -36,6 +36,7 @@
             background: var(--net-dark);
             min-height: 100vh;
             overflow-x: hidden;
+            isolation: isolate;
         }
 
         /* ========== CUSTOM NETWORK CURSOR ========== */
@@ -74,11 +75,37 @@
             position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
-            z-index: -5;
+            z-index: -6;
             background:
                 radial-gradient(ellipse at top left, rgba(0, 90, 130, 0.4), transparent 55%),
                 radial-gradient(ellipse at bottom right, rgba(0, 80, 60, 0.35), transparent 55%),
                 linear-gradient(180deg, #020617 0%, #0a1629 50%, #020617 100%);
+            background-size: 140% 140%, 140% 140%, 100% 100%;
+            animation: ambientShift 18s ease-in-out infinite alternate;
+            overflow: hidden;
+        }
+        .net-bg::after {
+            content: '';
+            position: absolute;
+            inset: -60%;
+            background: linear-gradient(
+                115deg,
+                transparent 46%,
+                rgba(0, 216, 255, 0.025) 48%,
+                rgba(0, 216, 255, 0.13) 50%,
+                rgba(0, 255, 148, 0.07) 51%,
+                transparent 54%
+            );
+            transform: translateX(-55%);
+            animation: signalSweep 8s ease-in-out infinite;
+        }
+        @keyframes signalSweep {
+            0%, 8% { transform: translateX(-55%); }
+            92%, 100% { transform: translateX(55%); }
+        }
+        @keyframes ambientShift {
+            0% { background-position: 0% 0%, 100% 100%, 0 0; }
+            100% { background-position: 22% 16%, 78% 84%, 0 0; }
         }
 
         /* Circuit Grid */
@@ -86,16 +113,95 @@
             position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
-            z-index: -4;
+            z-index: -5;
             background-image:
-                linear-gradient(rgba(0, 216, 255, 0.06) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 216, 255, 0.06) 1px, transparent 1px);
+                linear-gradient(rgba(0, 216, 255, 0.075) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 216, 255, 0.075) 1px, transparent 1px);
             background-size: 60px 60px;
-            animation: gridPulse 8s ease-in-out infinite alternate;
+            animation: gridDrift 12s linear infinite, gridPulse 5s ease-in-out infinite alternate;
+            mask-image: linear-gradient(to bottom, transparent, black 15%, black 85%, transparent);
+            transform: translate3d(var(--grid-shift-x, 0px), var(--grid-shift-y, 0px), 0);
+            transition: transform 0.25s ease-out;
+        }
+        @keyframes gridDrift {
+            to { background-position: 60px 60px; }
         }
         @keyframes gridPulse {
-            0% { opacity: 0.4; transform: scale(1); }
-            100% { opacity: 0.7; transform: scale(1.03); }
+            0% { opacity: 0.35; }
+            100% { opacity: 0.75; }
+        }
+        .network-canvas {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -4;
+            pointer-events: none;
+        }
+        .cursor-field {
+            position: fixed;
+            inset: 0;
+            z-index: -2;
+            pointer-events: none;
+            opacity: var(--cursor-field-opacity, 0);
+            background:
+                radial-gradient(
+                    circle at var(--cursor-x, 50%) var(--cursor-y, 50%),
+                    rgba(0, 216, 255, 0.18) 0,
+                    rgba(0, 216, 255, 0.08) 9%,
+                    rgba(0, 255, 148, 0.035) 19%,
+                    transparent 34%
+                );
+            transition: opacity 0.4s ease;
+        }
+        .binary-rain {
+            transform: translate3d(var(--rain-shift-x, 0px), var(--rain-shift-y, 0px), 0);
+            transition: transform 0.35s ease-out;
+        }
+        .ambient-effects {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            overflow: hidden;
+            pointer-events: none;
+            background: repeating-linear-gradient(
+                to bottom,
+                transparent 0,
+                transparent 3px,
+                rgba(75, 190, 255, 0.025) 4px
+            );
+            animation: scanDrift 12s linear infinite;
+        }
+        .ambient-effects::before,
+        .ambient-effects::after {
+            content: '';
+            position: absolute;
+            width: 45vw;
+            height: 45vw;
+            min-width: 320px;
+            min-height: 320px;
+            border-radius: 50%;
+            filter: blur(90px);
+            opacity: 0.12;
+            animation: glowDrift 18s ease-in-out infinite alternate;
+        }
+        .ambient-effects::before {
+            top: 8%;
+            left: -18%;
+            background: var(--net-accent);
+        }
+        .ambient-effects::after {
+            right: -18%;
+            bottom: 4%;
+            background: var(--net-secondary);
+            animation-delay: -8s;
+        }
+        @keyframes scanDrift {
+            to { background-position-y: 8px; }
+        }
+        @keyframes glowDrift {
+            from { transform: translate3d(0, 0, 0) scale(0.9); }
+            to { transform: translate3d(8vw, 5vh, 0) scale(1.15); }
         }
 
         /* Floating Network Nodes */
@@ -104,6 +210,7 @@
             top: 0; left: 0;
             width: 100%; height: 100%;
             z-index: -3;
+            pointer-events: none;
         }
         .node {
             position: absolute;
@@ -111,11 +218,11 @@
             border-radius: 50%;
             background: var(--net-node);
             box-shadow: var(--glow-cyan);
-            animation: nodeFloat 15s ease-in-out infinite;
+            animation: nodeFloat 8s ease-in-out infinite;
         }
         @keyframes nodeFloat {
-            0%, 100% { transform: translate(0, 0); opacity: 0.6; }
-            50% { transform: translate(20px, -30px); opacity: 1; }
+            0%, 100% { transform: translate(0, 0) scale(0.8); opacity: 0.45; }
+            50% { transform: translate(32px, -45px) scale(1.25); opacity: 1; }
         }
 
         /* Connecting Lines */
@@ -124,7 +231,7 @@
             height: 1px;
             background: linear-gradient(90deg, transparent, var(--net-line), transparent);
             transform-origin: left center;
-            animation: linePulse 4s ease-in-out infinite;
+            animation: linePulse 2.4s ease-in-out infinite;
         }
         @keyframes linePulse {
             0%, 100% { opacity: 0.2; }
@@ -156,19 +263,33 @@
             z-index: -2;
             pointer-events: none;
             overflow: hidden;
+            mask-image: linear-gradient(to bottom, transparent, black 15%, black 85%, transparent);
         }
         .binary-col {
             position: absolute;
             top: -100%;
             font-family: 'Courier New', monospace;
             font-size: 10px;
-            color: rgba(0, 255, 148, 0.25);
+            color: rgba(0, 255, 148, 0.18);
             writing-mode: vertical-rl;
-            animation: binaryFall 20s linear infinite;
+            animation: binaryFall 13s linear infinite;
         }
         @keyframes binaryFall {
             0% { transform: translateY(0); }
             100% { transform: translateY(200vh); }
+        }
+        .scroll-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 60;
+            width: 100%;
+            height: 2px;
+            transform: scaleX(0);
+            transform-origin: left;
+            background: linear-gradient(90deg, var(--net-accent), var(--net-secondary), var(--net-data));
+            box-shadow: 0 0 12px var(--net-accent);
+            pointer-events: none;
         }
 
         /* ========== TYPOGRAPHY ========== */
@@ -199,7 +320,7 @@
             padding: 2rem;
             position: relative;
             overflow: hidden;
-            transition: all 0.4s ease;
+            transition: border-color 0.4s ease, box-shadow 0.4s ease, transform 0.4s ease, background 0.4s ease;
             animation: cardSlide 0.9s ease forwards;
             opacity: 0;
             transform: translateY(30px);
@@ -224,25 +345,98 @@
             transform: translateY(-6px) scale(1.02);
             box-shadow: 0 0 25px rgba(0, 216, 255, 0.3), inset 0 0 20px rgba(0, 216, 255, 0.08);
         }
+        .card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at var(--pointer-x, 50%) var(--pointer-y, 50%), rgba(0, 216, 255, 0.12), transparent 42%);
+            opacity: 0;
+            transition: opacity 0.35s ease;
+            pointer-events: none;
+        }
+        .card:hover::after { opacity: 1; }
 
         /* ========== ANIMATED ICONS ========== */
-        .icon-wrap { display: inline-block; }
-        .icon-pulse { animation: iconPulse 2s ease-in-out infinite; }
-        @keyframes iconPulse {
-            0%, 100% { transform: scale(1); filter: drop-shadow(0 0 4px var(--net-accent)); }
-            50% { transform: scale(1.15); filter: drop-shadow(0 0 12px var(--net-accent)); }
+        .icon-wrap {
+            display: inline-flex;
+            width: 1.65em;
+            height: 1.65em;
+            margin: 0 0.08em;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            transform-style: preserve-3d;
+            perspective: 500px;
+            will-change: transform, filter;
+            border: 1px solid rgba(0, 216, 255, 0.42);
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(0, 216, 255, 0.2), rgba(0, 30, 55, 0.72) 68%);
+            box-shadow: inset 0 0 9px rgba(0, 216, 255, 0.24), 0 0 12px rgba(0, 216, 255, 0.26);
+            color: #bdffff;
+            font-size: 0.8em;
+            line-height: 1;
+            text-shadow: 0 0 7px currentColor;
         }
-        .icon-bounce:hover { animation: bounce 0.6s ease; }
+        .icon-wrap::before,
+        .icon-wrap::after {
+            content: '';
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+        }
+        .icon-wrap::before {
+            inset: -0.18em;
+            border: 1px solid rgba(0, 216, 255, 0.7);
+            border-left-color: transparent;
+            border-bottom-color: rgba(0, 255, 148, 0.45);
+            box-shadow: 0 0 8px rgba(0, 216, 255, 0.2);
+            animation: iconOrbit 4.2s linear infinite;
+        }
+        .icon-wrap::after {
+            inset: -0.32em;
+            border: 1px dashed rgba(0, 255, 148, 0.48);
+            border-right-color: transparent;
+            opacity: 0.7;
+            animation: iconOrbit 7s linear infinite reverse;
+        }
+        @keyframes iconOrbit {
+            from { transform: perspective(320px) rotateX(62deg) rotateZ(0deg); }
+            to { transform: perspective(320px) rotateX(62deg) rotateZ(360deg); }
+        }
+        .icon-pulse { animation: iconPulse 2.2s ease-in-out infinite; }
+        @keyframes iconPulse {
+            0%, 100% { transform: perspective(320px) translateY(0) rotateX(0) rotateY(-12deg) scale(1); filter: drop-shadow(0 4px 3px rgba(0, 0, 0, 0.6)) drop-shadow(0 0 5px var(--net-accent)); }
+            50% { transform: perspective(320px) translateY(-5px) rotateX(24deg) rotateY(12deg) scale(1.18); filter: drop-shadow(0 9px 6px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 15px var(--net-accent)); }
+        }
+        .icon-bounce { animation: iconBounce3D 2.7s ease-in-out infinite; }
+        .icon-bounce:hover { animation-duration: 0.55s; }
+        @keyframes iconBounce3D {
+            0%, 100% { transform: perspective(320px) translateY(0) rotateX(0) rotateY(-18deg); filter: drop-shadow(0 3px 2px rgba(0, 0, 0, 0.65)); }
+            45% { transform: perspective(320px) translateY(-9px) rotateX(28deg) rotateY(18deg) rotateZ(-5deg); filter: drop-shadow(0 12px 5px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 12px var(--net-accent)); }
+            65% { transform: perspective(320px) translateY(-3px) rotateX(-12deg) rotateY(-8deg) rotateZ(3deg); }
+        }
         @keyframes bounce {
             0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-10px); }
         }
-        .icon-rotate:hover { animation: rotate 1s linear; }
+        .icon-rotate { animation: iconSpin3D 5s linear infinite; }
+        .icon-rotate:hover { animation-duration: 1.2s; }
+        @keyframes iconSpin3D {
+            0% { transform: perspective(320px) rotateY(0) rotateX(0) translateZ(0); }
+            25% { transform: perspective(320px) rotateY(90deg) rotateX(18deg) translateZ(5px); }
+            50% { transform: perspective(320px) rotateY(180deg) rotateX(0) translateZ(0); }
+            75% { transform: perspective(320px) rotateY(270deg) rotateX(-18deg) translateZ(5px); }
+            100% { transform: perspective(320px) rotateY(360deg) rotateX(0) translateZ(0); }
+        }
         @keyframes rotate {
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
         }
-        .icon-data-flow { animation: dataFlow 3s ease-in-out infinite; }
+        .icon-data-flow { animation: iconData3D 3.2s ease-in-out infinite; }
+        @keyframes iconData3D {
+            0%, 100% { transform: perspective(320px) translate3d(0, 0, 0) rotateY(-16deg) rotateX(-8deg); opacity: 1; }
+            50% { transform: perspective(320px) translate3d(7px, -3px, 14px) rotateY(22deg) rotateX(16deg); opacity: 0.72; }
+        }
         @keyframes dataFlow {
             0%, 100% { transform: translateX(0); opacity: 1; }
             50% { transform: translateX(5px); opacity: 0.6; }
@@ -255,7 +449,12 @@
             border-radius: 50%;
             background: linear-gradient(135deg, var(--net-accent), var(--net-secondary));
             padding: 3px;
-            animation: nodeGlow 3s ease-in-out infinite;
+            animation: nodeGlow 3s ease-in-out infinite, profileFloat 4.5s ease-in-out infinite;
+            transform-style: preserve-3d;
+        }
+        @keyframes profileFloat {
+            0%, 100% { transform: translateY(0) rotateX(0) rotateY(-4deg); }
+            50% { transform: translateY(-10px) rotateX(5deg) rotateY(4deg); }
         }
         @keyframes nodeGlow {
             0%, 100% { box-shadow: 0 0 20px var(--net-accent), 0 0 40px rgba(0, 216, 255, 0.3); }
@@ -366,9 +565,69 @@
         }
 
         section { margin-bottom: 5rem; }
+        main, footer, nav { position: relative; z-index: 1; }
+        section {
+            scroll-margin-top: 110px;
+        }
+        .reveal-ready section {
+            opacity: 0;
+            transform: translateY(28px);
+            transition: opacity 0.75s ease, transform 0.75s cubic-bezier(0.2, 0.7, 0.2, 1);
+        }
+        .reveal-ready section.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        nav::after {
+            content: '';
+            position: absolute;
+            left: -35%;
+            bottom: -1px;
+            width: 35%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--net-accent), transparent);
+            animation: navSignal 7s linear infinite;
+            pointer-events: none;
+        }
+        @keyframes navSignal {
+            to { left: 100%; }
+        }
+        .nav-link {
+            position: relative;
+        }
+        .nav-link::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            bottom: -2px;
+            width: 0;
+            height: 2px;
+            background: var(--net-secondary);
+            box-shadow: 0 0 8px var(--net-secondary);
+            transition: width 0.3s ease, left 0.3s ease;
+        }
+        .nav-link:hover::before, .nav-link.active::before {
+            left: 15%;
+            width: 70%;
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                scroll-behavior: auto !important;
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+            .reveal-ready section {
+                opacity: 1;
+                transform: none;
+            }
+            .cursor-node, .cursor-packet { display: none; }
+            * { cursor: auto; }
+        }
     </style>
 </head>
 <body>
+    <div class="scroll-progress" id="scrollProgress" aria-hidden="true"></div>
     <!-- Custom Cursor -->
     <div class="cursor-node" id="cursorNode"></div>
     <div class="cursor-packet" id="cursorPacket"></div>
@@ -376,14 +635,17 @@
     <!-- Network Background Layers -->
     <div class="net-bg"></div>
     <div class="circuit-grid"></div>
+    <canvas class="network-canvas" id="networkCanvas" aria-hidden="true"></canvas>
     <div class="node-layer" id="nodeLayer"></div>
     <div class="binary-rain" id="binaryRain"></div>
+    <div class="cursor-field" id="cursorField" aria-hidden="true"></div>
+    <div class="ambient-effects" aria-hidden="true"></div>
 
     <!-- Navigation -->
     <nav class="fixed top-0 left-0 w-full z-50 bg-black/40 backdrop-blur-md px-6 py-4">
         <div class="max-w-7xl mx-auto flex flex-wrap justify-between items-center">
             <a href="#" class="font-bold text-xl glow-text flex items-center gap-2">
-                <span class="icon-wrap icon-pulse">📡</span>
+                <span class="icon-wrap icon-pulse"><i class="fa fa-wifi" aria-hidden="true"></i></span>
                 WJR<span class="text-cyan-400">//NET</span>
             </a>
             <div class="hidden md:flex gap-2">
@@ -408,7 +670,7 @@
                     <div class="profile-ring profile-ring-2"></div>
                     <div class="profile-node">
                         <img src="profile.jpg" alt="Wilfredo JR Samiling" class="profile-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                        <span class="text-5xl items-center justify-center flex h-full hidden">👤</span>
+                        <span class="text-5xl items-center justify-center flex h-full hidden"><span class="icon-wrap icon-pulse"><i class="fa fa-user" aria-hidden="true"></i></span></span>
                     </div>
                 </div>
 
@@ -416,7 +678,7 @@
                     Wilfredo JR Samiling
                 </h1>
                 <p class="text-xl md:text-2xl text-cyan-300 mb-2">
-                    <span class="icon-wrap icon-data-flow">🌐</span>
+                    <span class="icon-wrap icon-data-flow"><i class="fa fa-globe" aria-hidden="true"></i></span>
                     Network Designer • Web Developer • IT Systems Builder
                 </p>
                 <p class="text-lg text-green-300 mb-6">
@@ -438,34 +700,34 @@
         <!-- Core Focus Areas -->
         <section id="focus">
             <h2 class="text-3xl font-bold mb-8 glow-text accent-line">
-                <span class="icon-wrap icon-pulse">⚙️</span> Core Network & Dev Focus
+                <span class="icon-wrap icon-pulse"><i class="fa fa-cogs" aria-hidden="true"></i></span> Core Network & Dev Focus
             </h2>
             <div class="grid md:grid-cols-2 gap-6">
                 <div class="card node-card relative" style="animation-delay: 0.2s;">
                     <span class="node-id">01</span>
                     <h3 class="text-xl font-bold text-cyan-300 mb-3">
-                        <span class="icon-wrap icon-rotate">📡</span> Network Design & Management
+                        <span class="icon-wrap icon-rotate"><i class="fa fa-sitemap" aria-hidden="true"></i></span> Network Design & Management
                     </h3>
                     <p class="text-slate-300">VLAN • DHCP • DNS • IP Addressing • Routing • Inter-VLAN Connectivity • Cisco Packet Tracer</p>
                 </div>
                 <div class="card node-card relative" style="animation-delay: 0.3s;">
                     <span class="node-id">02</span>
                     <h3 class="text-xl font-bold text-green-300 mb-3">
-                        <span class="icon-wrap icon-bounce">💻</span> Web & App Development
+                        <span class="icon-wrap icon-bounce"><i class="fa fa-code" aria-hidden="true"></i></span> Web & App Development
                     </h3>
                     <p class="text-slate-300">HTML5 • CSS3 • JavaScript • Java • Responsive Design • Full-Stack Concepts • UI/UX</p>
                 </div>
                 <div class="card node-card relative" style="animation-delay: 0.4s;">
                     <span class="node-id">03</span>
                     <h3 class="text-xl font-bold text-yellow-300 mb-3">
-                        <span class="icon-wrap icon-data-flow">📊</span> Systems & Data Platforms
+                        <span class="icon-wrap icon-data-flow"><i class="fa fa-bar-chart" aria-hidden="true"></i></span> Systems & Data Platforms
                     </h3>
                     <p class="text-slate-300">Event Management • Registration Systems • Real-Time Processing • Data Workflows</p>
                 </div>
                 <div class="card node-card relative" style="animation-delay: 0.5s;">
                     <span class="node-id">04</span>
                     <h3 class="text-xl font-bold text-purple-300 mb-3">
-                        <span class="icon-wrap icon-pulse">🔧</span> Implementation & Operations
+                        <span class="icon-wrap icon-pulse"><i class="fa fa-wrench" aria-hidden="true"></i></span> Implementation & Operations
                     </h3>
                     <p class="text-slate-300">Simulation • Documentation • Troubleshooting • Deployment • Version Control — Git/GitHub</p>
                 </div>
@@ -475,7 +737,7 @@
         <!-- Skills & Education -->
         <section id="skills">
             <h2 class="text-3xl font-bold mb-8 glow-text accent-line">
-                <span class="icon-wrap icon-data-flow">🔌</span> Skills & Education
+                <span class="icon-wrap icon-data-flow"><i class="fa fa-plug" aria-hidden="true"></i></span> Skills & Education
             </h2>
             <div class="card" style="animation-delay: 0.6s;">
                 <h3 class="text-xl font-semibold mb-4 text-cyan-300">Networking Protocols & Tools</h3>
@@ -498,9 +760,9 @@
                     <span class="skill-proto">Git / GitHub</span>
                     <span class="skill-proto">Responsive UI</span>
                 </div>
-                <h3 class="text-xl font-semibold mb-4 text-slate-200">🎓 Education</h3>
+                <h3 class="text-xl font-semibold mb-4 text-slate-200"><span class="icon-wrap icon-bounce"><i class="fa fa-graduation-cap" aria-hidden="true"></i></span> Education</h3>
                 <p class="text-slate-300 mb-4"><strong>BS Information Technology</strong> — Nueva Vizcaya State University, Bayombong Campus</p>
-                <h3 class="text-xl font-semibold mb-4 text-slate-200">📜 Certifications In Progress</h3>
+                <h3 class="text-xl font-semibold mb-4 text-slate-200"><span class="icon-wrap icon-rotate"><i class="fa fa-certificate" aria-hidden="true"></i></span> Certifications In Progress</h3>
                 <p class="text-slate-400 italic">Cisco • TESDA • Google • Coursera — Coming Soon</p>
             </div>
         </section>
@@ -508,13 +770,13 @@
         <!-- Projects -->
         <section id="projects">
             <h2 class="text-3xl font-bold mb-8 glow-text accent-line">
-                <span class="icon-wrap icon-rotate">📂</span> Active Projects
+                <span class="icon-wrap icon-rotate"><i class="fa fa-folder-open" aria-hidden="true"></i></span> Active Projects
             </h2>
             <div class="grid md:grid-cols-2 gap-6">
                 <div class="card net-card" style="animation-delay: 0.7s;">
                     <span class="port-label">port:80 → /events</span>
                     <h3 class="text-xl font-bold text-cyan-300 mb-2">
-                        <span class="icon-wrap icon-bounce">🎫</span> CITE Digital Event Platform
+                        <span class="icon-wrap icon-bounce"><i class="fa fa-ticket" aria-hidden="true"></i></span> CITE Digital Event Platform
                     </h3>
                     <p class="text-slate-400 mb-4">Connected web platform with registration, duplicate prevention, live status tracking, participant roster, and real-time data processing.</p>
                     <div class="flex flex-wrap">
@@ -526,7 +788,7 @@
                 <div class="card net-card" style="animation-delay: 0.8s;">
                     <span class="port-label">port:443 → /portfolio</span>
                     <h3 class="text-xl font-bold text-green-300 mb-2">
-                        <span class="icon-wrap icon-bounce">✨</span> Network-Themed Portfolio
+                        <span class="icon-wrap icon-bounce"><i class="fa fa-magic" aria-hidden="true"></i></span> Network-Themed Portfolio
                     </h3>
                     <p class="text-slate-400 mb-4">This very site — built with animated network visuals, data streams, and full GitHub → Vercel deployment pipeline.</p>
                     <div class="flex flex-wrap">
@@ -539,7 +801,7 @@
                 <div class="card net-card" style="animation-delay: 0.9s;">
                     <span class="port-label">sim:router-vlan</span>
                     <h3 class="text-xl font-bold text-yellow-300 mb-2">
-                        <span class="icon-wrap icon-rotate">🔌</span> Network Infrastructure Lab
+                        <span class="icon-wrap icon-rotate"><i class="fa fa-server" aria-hidden="true"></i></span> Network Infrastructure Lab
                     </h3>
                     <p class="text-slate-400 mb-4">Full topology design: VLAN segmentation, DHCP addressing, DNS resolution, inter-VLAN routing, connectivity testing — all in Cisco Packet Tracer.</p>
                     <div class="flex flex-wrap">
@@ -555,12 +817,12 @@
         <!-- Experience -->
         <section id="experience">
             <h2 class="text-3xl font-bold mb-8 glow-text accent-line">
-                <span class="icon-wrap icon-pulse">🔗</span> Experience & Organizations
+                <span class="icon-wrap icon-pulse"><i class="fa fa-link" aria-hidden="true"></i></span> Experience & Organizations
             </h2>
             <div class="space-y-6">
                 <div class="card" style="animation-delay: 1.0s;">
                     <h3 class="text-xl font-bold text-cyan-300">
-                        <span class="icon-wrap icon-data-flow">👨‍💻</span> Student Network & Web Developer
+                        <span class="icon-wrap icon-data-flow"><i class="fa fa-code" aria-hidden="true"></i></span> Student Network & Web Developer
                     </h3>
                     <p class="text-slate-400">Academic & Organizational Projects</p>
                     <ul class="mt-3 space-y-2 text-slate-300 list-disc list-inside">
@@ -572,7 +834,7 @@
                 </div>
                 <div class="card" style="animation-delay: 1.1s;">
                     <h3 class="text-xl font-bold text-green-300">
-                        <span class="icon-wrap icon-bounce">🏛️</span> CITE Student Council — Active Member
+                        <span class="icon-wrap icon-bounce"><i class="fa fa-users" aria-hidden="true"></i></span> CITE Student Council — Active Member
                     </h3>
                     <p class="text-slate-400">NVSU Bayombong Campus</p>
                     <ul class="mt-3 space-y-2 text-slate-300 list-disc list-inside">
@@ -587,21 +849,21 @@
         <!-- Achievements -->
         <section id="achievements">
             <h2 class="text-3xl font-bold mb-8 glow-text accent-line">
-                <span class="icon-wrap icon-pulse">🏆</span> Milestones
+                <span class="icon-wrap icon-pulse"><i class="fa fa-trophy" aria-hidden="true"></i></span> Milestones
             </h2>
             <div class="grid md:grid-cols-3 gap-6 mb-6">
                 <div class="card text-center" style="animation-delay: 1.2s;">
-                    <div class="text-4xl mb-3 icon-wrap icon-data-flow">🌐</div>
+                    <span class="text-4xl mb-3 icon-wrap icon-data-flow"><i class="fa fa-sitemap" aria-hidden="true"></i></span>
                     <h3 class="text-lg font-bold text-cyan-300">Network Topology</h3>
                     <p class="text-slate-400 text-sm">VLAN, DHCP, DNS & inter-VLAN fully configured</p>
                 </div>
                 <div class="card text-center" style="animation-delay: 1.3s;">
-                    <div class="text-4xl mb-3 icon-wrap icon-bounce">📱</div>
+                    <span class="text-4xl mb-3 icon-wrap icon-bounce"><i class="fa fa-mobile" aria-hidden="true"></i></span>
                     <h3 class="text-lg font-bold text-green-300">Event Platform</h3>
                     <p class="text-slate-400 text-sm">Full system design & workflow documented</p>
                 </div>
                 <div class="card text-center" style="animation-delay: 1.4s;">
-                    <div class="text-4xl mb-3 icon-wrap icon-rotate">🚀</div>
+                    <span class="text-4xl mb-3 icon-wrap icon-rotate"><i class="fa fa-rocket" aria-hidden="true"></i></span>
                     <h3 class="text-lg font-bold text-yellow-300">Live Portfolio</h3>
                     <p class="text-slate-400 text-sm">GitHub → Vercel deployment pipeline active</p>
                 </div>
@@ -611,7 +873,7 @@
         <!-- Contact -->
         <section id="contact">
             <h2 class="text-3xl font-bold mb-8 glow-text accent-line">
-                <span class="icon-wrap icon-data-flow">📡</span> Connect / Contact
+                <span class="icon-wrap icon-data-flow"><i class="fa fa-rss" aria-hidden="true"></i></span> Connect / Contact
             </h2>
             <div class="card" style="animation-delay: 1.6s;">
                 <div class="grid md:grid-cols-2 gap-8">
@@ -619,19 +881,19 @@
                         <h3 class="text-xl font-semibold mb-4 text-cyan-300">Connection Details</h3>
                         <ul class="space-y-3 font-mono text-sm">
                             <li class="flex items-center gap-3 text-slate-400">
-                                <i class="fa fa-envelope text-cyan-400 icon-wrap icon-bounce"></i>
+                                <span class="icon-wrap icon-bounce text-cyan-400"><i class="fa fa-envelope" aria-hidden="true"></i></span>
                                 Email: <span class="text-slate-500 italic">wimfredsamiling11@gmail.com</span>
                             </li>
                             <li class="flex items-center gap-3 text-slate-400">
-                                <i class="fa fa-github text-cyan-400 icon-wrap icon-rotate"></i>
+                                <span class="icon-wrap icon-rotate text-cyan-400"><i class="fa fa-github" aria-hidden="true"></i></span>
                                 GitHub: <span class="text-slate-500 italic">jayar-cmd</span>
                             </li>
                             <li class="flex items-center gap-3 text-slate-400">
-                                <i class="fa fa-linkedin-square text-cyan-400 icon-wrap icon-bounce"></i>
+                                <span class="icon-wrap icon-bounce text-cyan-400"><i class="fa fa-linkedin-square" aria-hidden="true"></i></span>
                                 LinkedIn: <span class="text-slate-500 italic">To be added</span>
                             </li>
                             <li class="flex items-center gap-3 text-slate-400">
-                                <i class="fa fa-map-marker text-cyan-400 icon-wrap icon-pulse"></i>
+                                <span class="icon-wrap icon-pulse text-cyan-400"><i class="fa fa-map-marker" aria-hidden="true"></i></span>
                                 NVSU Bayombong Campus, Nueva Vizcaya
                             </li>
                         </ul>
@@ -645,7 +907,7 @@
                             </span>
                         </p>
                         <p class="text-slate-400">
-                            Currently completing degree and building projects. Email & social links coming soon — this node is expanding! 📡
+                            Currently completing degree and building projects. Email & social links coming soon — this node is expanding!
                         </p>
                     </div>
                 </div>
@@ -664,13 +926,19 @@
         const cursorPacket = document.getElementById('cursorPacket');
         let mx = 0, my = 0, px = 0, py = 0;
 
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const canUseCustomCursor = window.matchMedia('(min-width: 769px)').matches && !prefersReducedMotion;
+
         document.addEventListener('mousemove', e => {
             mx = e.clientX; my = e.clientY;
-            cursorNode.style.left = (mx - 12) + 'px';
-            cursorNode.style.top = (my - 12) + 'px';
+            if (canUseCustomCursor) {
+                cursorNode.style.left = (mx - 12) + 'px';
+                cursorNode.style.top = (my - 12) + 'px';
+            }
         });
 
         function animatePacket() {
+            if (!canUseCustomCursor) return;
             px += (mx - px) * 0.35;
             py += (my - py) * 0.35;
             cursorPacket.style.left = (px - 3) + 'px';
@@ -686,12 +954,219 @@
         });
 
         // Hide on leave
-        document.addEventListener('mouseleave', () => {
-            cursorNode.style.opacity = cursorPacket.style.opacity = 0;
+        if (canUseCustomCursor) {
+            document.addEventListener('mouseleave', () => {
+                cursorNode.style.opacity = cursorPacket.style.opacity = 0;
+            });
+            document.addEventListener('mouseenter', () => {
+                cursorNode.style.opacity = cursorPacket.style.opacity = 1;
+            });
+        }
+
+        // ========== LIVE NETWORK TOPOLOGY ==========
+        const networkCanvas = document.getElementById('networkCanvas');
+        const networkContext = networkCanvas.getContext('2d');
+        const networkNodes = [];
+        let canvasWidth = 0;
+        let canvasHeight = 0;
+        let networkFrame;
+        let networkPointerX = -1000;
+        let networkPointerY = -1000;
+        let smoothPointerX = -1000;
+        let smoothPointerY = -1000;
+        let pointerActivity = 0;
+        let pointerTargetActivity = 0;
+
+        window.addEventListener('pointermove', event => {
+            if (prefersReducedMotion) return;
+            networkPointerX = event.clientX;
+            networkPointerY = event.clientY;
+            pointerTargetActivity = 1;
+        }, { passive: true });
+        window.addEventListener('pointerleave', () => {
+            pointerTargetActivity = 0;
         });
-        document.addEventListener('mouseenter', () => {
-            cursorNode.style.opacity = cursorPacket.style.opacity = 1;
+
+        function resizeNetwork() {
+            const ratio = Math.min(window.devicePixelRatio || 1, 1.5);
+            canvasWidth = window.innerWidth;
+            canvasHeight = window.innerHeight;
+            networkCanvas.width = Math.floor(canvasWidth * ratio);
+            networkCanvas.height = Math.floor(canvasHeight * ratio);
+            networkCanvas.style.width = `${canvasWidth}px`;
+            networkCanvas.style.height = `${canvasHeight}px`;
+            networkContext.setTransform(ratio, 0, 0, ratio, 0, 0);
+            const count = Math.min(64, Math.max(24, Math.floor(canvasWidth * canvasHeight / 24000)));
+            networkNodes.length = 0;
+            for (let i = 0; i < count; i++) {
+                networkNodes.push({
+                    x: Math.random() * canvasWidth,
+                    y: Math.random() * canvasHeight,
+                    vx: (Math.random() - 0.5) * 0.5,
+                    vy: (Math.random() - 0.5) * 0.5,
+                    phase: Math.random() * Math.PI * 2
+                });
+            }
+            if (prefersReducedMotion) drawNetwork(0, false);
+        }
+
+        function drawNetwork(time, animate = true) {
+            networkContext.clearRect(0, 0, canvasWidth, canvasHeight);
+            const maxDistance = 165;
+            if (animate) {
+                pointerActivity += (pointerTargetActivity - pointerActivity) * 0.08;
+                if (pointerActivity < 0.005) pointerActivity = 0;
+                if (pointerTargetActivity) {
+                    if (smoothPointerX < 0) {
+                        smoothPointerX = networkPointerX;
+                        smoothPointerY = networkPointerY;
+                    }
+                    smoothPointerX += (networkPointerX - smoothPointerX) * 0.18;
+                    smoothPointerY += (networkPointerY - smoothPointerY) * 0.18;
+                }
+            }
+            if (animate && smoothPointerX >= 0) {
+                const cursorX = smoothPointerX / canvasWidth * 100;
+                const cursorY = smoothPointerY / canvasHeight * 100;
+                document.body.style.setProperty('--cursor-x', `${cursorX}%`);
+                document.body.style.setProperty('--cursor-y', `${cursorY}%`);
+                document.body.style.setProperty('--cursor-field-opacity', `${pointerActivity}`);
+                document.body.style.setProperty('--grid-shift-x', `${(cursorX - 50) * -0.12}px`);
+                document.body.style.setProperty('--grid-shift-y', `${(cursorY - 50) * -0.12}px`);
+                document.body.style.setProperty('--rain-shift-x', `${(cursorX - 50) * -0.2}px`);
+                document.body.style.setProperty('--rain-shift-y', `${(cursorY - 50) * -0.2}px`);
+                if (!pointerTargetActivity && pointerActivity === 0) {
+                    document.body.style.setProperty('--cursor-field-opacity', '0');
+                    document.body.style.setProperty('--grid-shift-x', '0px');
+                    document.body.style.setProperty('--grid-shift-y', '0px');
+                    document.body.style.setProperty('--rain-shift-x', '0px');
+                    document.body.style.setProperty('--rain-shift-y', '0px');
+                }
+            }
+
+            if (animate && pointerActivity > 0.02 && smoothPointerX >= 0) {
+                const glowRadius = 230;
+                const glow = networkContext.createRadialGradient(
+                    smoothPointerX, smoothPointerY, 0,
+                    smoothPointerX, smoothPointerY, glowRadius
+                );
+                glow.addColorStop(0, `rgba(0, 216, 255, ${pointerActivity * 0.13})`);
+                glow.addColorStop(0.45, `rgba(0, 255, 148, ${pointerActivity * 0.045})`);
+                glow.addColorStop(1, 'rgba(0, 216, 255, 0)');
+                networkContext.fillStyle = glow;
+                networkContext.fillRect(
+                    smoothPointerX - glowRadius,
+                    smoothPointerY - glowRadius,
+                    glowRadius * 2,
+                    glowRadius * 2
+                );
+
+                const ripple = (time / 950) % 1;
+                networkContext.beginPath();
+                networkContext.arc(smoothPointerX, smoothPointerY, 18 + ripple * 48, 0, Math.PI * 2);
+                networkContext.strokeStyle = `rgba(0, 216, 255, ${(1 - ripple) * pointerActivity * 0.45})`;
+                networkContext.lineWidth = 1.5;
+                networkContext.stroke();
+
+                for (let orbit = 0; orbit < 3; orbit++) {
+                    const angle = time / (620 + orbit * 170) + orbit * Math.PI * 2 / 3;
+                    const radius = 15 + orbit * 8;
+                    const packetX = smoothPointerX + Math.cos(angle) * radius;
+                    const packetY = smoothPointerY + Math.sin(angle) * radius;
+                    networkContext.beginPath();
+                    networkContext.arc(packetX, packetY, 2 + (orbit % 2), 0, Math.PI * 2);
+                    networkContext.fillStyle = orbit % 2 ? '#00ff94' : '#ffd000';
+                    networkContext.shadowBlur = 14;
+                    networkContext.shadowColor = networkContext.fillStyle;
+                    networkContext.fill();
+                    networkContext.shadowBlur = 0;
+                }
+            }
+
+            networkNodes.forEach((node, index) => {
+                if (animate) {
+                    const pointerDx = smoothPointerX - node.x;
+                    const pointerDy = smoothPointerY - node.y;
+                    const pointerDistance = Math.hypot(pointerDx, pointerDy);
+                    const pointerForce = pointerActivity && pointerDistance < 340
+                        ? (1 - pointerDistance / 340) * 0.018 * pointerActivity
+                        : 0;
+                    const orbitForce = pointerActivity && pointerDistance < 180
+                        ? 0.012 * pointerActivity
+                        : 0;
+                    node.vx += (pointerDistance ? pointerDx / pointerDistance * pointerForce : 0)
+                        + (pointerDistance ? -pointerDy / pointerDistance * orbitForce : 0);
+                    node.vy += (pointerDistance ? pointerDy / pointerDistance * pointerForce : 0)
+                        + (pointerDistance ? pointerDx / pointerDistance * orbitForce : 0);
+                    node.vx *= 0.992;
+                    node.vy *= 0.992;
+                    const speed = Math.hypot(node.vx, node.vy);
+                    if (speed > 1.1) {
+                        node.vx = node.vx / speed * 1.1;
+                        node.vy = node.vy / speed * 1.1;
+                    }
+                    node.x += node.vx;
+                    node.y += node.vy;
+                    if (node.x < -12) node.x = canvasWidth + 12;
+                    if (node.x > canvasWidth + 12) node.x = -12;
+                    if (node.y < -12) node.y = canvasHeight + 12;
+                    if (node.y > canvasHeight + 12) node.y = -12;
+                }
+
+                const pulse = animate ? (Math.sin(time / 850 + node.phase) + 1) / 2 : 0.5;
+                networkContext.beginPath();
+                networkContext.arc(node.x, node.y, 1.2 + pulse * 1.1, 0, Math.PI * 2);
+                networkContext.fillStyle = `rgba(0, 216, 255, ${0.38 + pulse * 0.45})`;
+                networkContext.shadowBlur = 12;
+                networkContext.shadowColor = '#00d8ff';
+                networkContext.fill();
+                networkContext.shadowBlur = 0;
+
+                for (let j = index + 1; j < networkNodes.length; j++) {
+                    const target = networkNodes[j];
+                    const dx = target.x - node.x;
+                    const dy = target.y - node.y;
+                    const distance = Math.hypot(dx, dy);
+                    if (distance > maxDistance) continue;
+
+                    const alpha = (1 - distance / maxDistance) * 0.24;
+                    networkContext.beginPath();
+                    networkContext.moveTo(node.x, node.y);
+                    networkContext.lineTo(target.x, target.y);
+                    networkContext.strokeStyle = `rgba(0, 216, 255, ${alpha})`;
+                    networkContext.lineWidth = 0.7;
+                    networkContext.stroke();
+
+                    if (animate && (index + j) % 3 === 0) {
+                        const progress = (time / 1350 + (index * 0.173 + j * 0.097)) % 1;
+                        const packetX = node.x + dx * progress;
+                        const packetY = node.y + dy * progress;
+                        networkContext.beginPath();
+                        networkContext.arc(packetX, packetY, 2.1, 0, Math.PI * 2);
+                        networkContext.fillStyle = '#00ff94';
+                        networkContext.shadowBlur = 9;
+                        networkContext.shadowColor = '#00ff94';
+                        networkContext.fill();
+                        networkContext.shadowBlur = 0;
+                    }
+                }
+            });
+
+            if (animate && !document.hidden) {
+                networkFrame = requestAnimationFrame(drawNetwork);
+            }
+        }
+
+        window.addEventListener('resize', resizeNetwork);
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                cancelAnimationFrame(networkFrame);
+            } else if (!prefersReducedMotion) {
+                networkFrame = requestAnimationFrame(drawNetwork);
+            }
         });
+        resizeNetwork();
+        if (!prefersReducedMotion) networkFrame = requestAnimationFrame(drawNetwork);
 
         // ========== GENERATE FLOATING NODES & CONNECTIONS ==========
         const nodeLayer = document.getElementById('nodeLayer');
@@ -731,11 +1206,11 @@
         // ========== BINARY RAIN ==========
         const binaryRain = document.getElementById('binaryRain');
         const binaryChars = '01';
-        for (let i = 0; i < 25; i++) {
+        for (let i = 0; i < 33; i++) {
             const col = document.createElement('div');
             col.classList.add('binary-col');
-            col.style.left = `${i * 4}%`;
-            col.style.animationDuration = `${15 + Math.random() * 20}s`;
+            col.style.left = `${i * (100 / 33)}%`;
+            col.style.animationDuration = `${9 + Math.random() * 12}s`;
             col.style.animationDelay = `${Math.random() * 10}s`;
             let text = '';
             for (let j = 0; j < 40; j++) {
@@ -749,19 +1224,53 @@
         document.querySelectorAll('a[href^="#"]').forEach(a => {
             a.addEventListener('click', e => {
                 e.preventDefault();
-                document.querySelector(a.getAttribute('href'))?.scrollIntoView({ behavior: 'smooth' });
+                const target = document.querySelector(a.getAttribute('href'));
+                if (target) target.scrollIntoView({ behavior: prefersReducedMotion ? 'auto' : 'smooth' });
             });
         });
 
         const sections = document.querySelectorAll('section');
         const navLinks = document.querySelectorAll('.nav-link');
-        window.addEventListener('scroll', () => {
+        const scrollProgress = document.getElementById('scrollProgress');
+        let scrollTicking = false;
+        function updateScrollEffects() {
+            const scrollableHeight = document.documentElement.scrollHeight - window.innerHeight;
+            const progress = scrollableHeight > 0 ? window.scrollY / scrollableHeight : 0;
+            scrollProgress.style.transform = `scaleX(${progress})`;
             let curr = '';
             sections.forEach(s => {
-                if (pageYOffset >= s.offsetTop - 150) curr = s.getAttribute('id');
+                if (window.pageYOffset >= s.offsetTop - 150) curr = s.getAttribute('id');
             });
             navLinks.forEach(l => {
                 l.classList.toggle('active', l.getAttribute('href') === `#${curr}`);
+            });
+            scrollTicking = false;
+        }
+        window.addEventListener('scroll', () => {
+            if (scrollTicking) return;
+            scrollTicking = true;
+            requestAnimationFrame(updateScrollEffects);
+        });
+        updateScrollEffects();
+
+        if ('IntersectionObserver' in window && !prefersReducedMotion) {
+            document.body.classList.add('reveal-ready');
+            const sectionObserver = new IntersectionObserver(entries => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('is-visible');
+                        sectionObserver.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.08 });
+            sections.forEach(section => sectionObserver.observe(section));
+        }
+
+        document.querySelectorAll('.card').forEach(card => {
+            card.addEventListener('pointermove', event => {
+                const bounds = card.getBoundingClientRect();
+                card.style.setProperty('--pointer-x', `${event.clientX - bounds.left}px`);
+                card.style.setProperty('--pointer-y', `${event.clientY - bounds.top}px`);
             });
         });
     </script>
